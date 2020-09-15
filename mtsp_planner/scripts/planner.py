@@ -145,21 +145,22 @@ class TspPlanner:
         
         
         ############### TARGET LOCATIONS CLUSTERING BEGIN ###############
-        clusters = [[tsp_problem.start_positions[i]] for i in range(tsp_problem.number_of_robots)]  # initiate cluster with starts
-        print("clusters with start", clusters)
-        for i in range(tsp_problem.number_of_robots):
-            start_id = i * len(tsp_problem.targets) / tsp_problem.number_of_robots
-            stop_id = (i + 1) * len(tsp_problem.targets) / tsp_problem.number_of_robots            
-            clusters[i] += tsp_problem.targets[start_id:stop_id]      
+        # clusters = [[tsp_problem.start_positions[i]] for i in range(tsp_problem.number_of_robots)]  # initiate cluster with starts
+        # print("clusters with start", clusters)
+        # for i in range(tsp_problem.number_of_robots):
+        #     start_id = i * len(tsp_problem.targets) / tsp_problem.number_of_robots
+        #     stop_id = (i + 1) * len(tsp_problem.targets) / tsp_problem.number_of_robots
+        #     clusters[i] += tsp_problem.targets[start_id:stop_id]
 
+        clusters, cluster_centers = tsp_solver.cluster_kmeans(tsp_problem.targets, tsp_problem.number_of_robots)
         ############### TARGET LOCATIONS CLUSTERING END ###############
-        
+
         
         # # | -------------------- plot the clusters ------------------- |
         if self._plot:  # plot the clusters
             colors = cm.rainbow(np.linspace(0, 1, tsp_problem.number_of_robots))
             for i in range(tsp_problem.number_of_robots):
-                # plt.plot([cluster_centers[i][0]],[cluster_centers[i][1]],'*',color=colors[i])
+                plt.plot([cluster_centers[i][0]],[cluster_centers[i][1]],'*',color=colors[i])
                 plt.plot([c[1] for c in clusters[i]], [c[2] for c in clusters[i]], '.', color=colors[i])
 
         # # | ---------------------- solve the TSP --------------------- |
