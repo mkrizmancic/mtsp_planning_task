@@ -153,6 +153,14 @@ class TspPlanner:
         #     clusters[i] += tsp_problem.targets[start_id:stop_id]
 
         clusters, cluster_centers = tsp_solver.cluster_kmeans(tsp_problem.targets, tsp_problem.number_of_robots)
+        if (dist_euclidean(tsp_problem.start_positions[0][0:2], cluster_centers[0][0:2]) <
+            dist_euclidean(tsp_problem.start_positions[0][0:2], cluster_centers[1][0:2])):
+            clusters[0].insert(0, tsp_problem.start_positions[0])
+            clusters[1].insert(0, tsp_problem.start_positions[1])
+        else:
+            clusters[0].insert(0, tsp_problem.start_positions[1])
+            clusters[1].insert(0, tsp_problem.start_positions[0])
+
         ############### TARGET LOCATIONS CLUSTERING END ###############
 
         
@@ -160,7 +168,7 @@ class TspPlanner:
         if self._plot:  # plot the clusters
             colors = cm.rainbow(np.linspace(0, 1, tsp_problem.number_of_robots))
             for i in range(tsp_problem.number_of_robots):
-                plt.plot([cluster_centers[i][0]],[cluster_centers[i][1]],'*',color=colors[i])
+                # plt.plot([cluster_centers[i][0]],[cluster_centers[i][1]],'*',color=colors[i])
                 plt.plot([c[1] for c in clusters[i]], [c[2] for c in clusters[i]], '.', color=colors[i])
 
         # # | ---------------------- solve the TSP --------------------- |
@@ -175,7 +183,7 @@ class TspPlanner:
             turning_radius = (self._turning_velocity * self._turning_velocity) / self._max_acceleration
             path = tsp_solver.plan_tour_dtspn_decoupled(clusters[i], 0, tsp_problem.neighborhood_radius * 0.8, turning_radius)  # find decoupled DTSPN tour over clusters
             # path = tsp_solver.plan_tour_dtspn_noon_bean(clusters[i], 0, tsp_problem.neighborhood_radius * 0.8, turning_radius) # find noon-bean DTSPN tour over clusters
-            
+
             ############### TSP SOLVERS PART END ###############
             
             print("path", path)
