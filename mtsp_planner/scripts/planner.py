@@ -185,8 +185,8 @@ class TspPlanner:
             # path = tsp_solver.plan_tour_etspn_decoupled(clusters[i], 0, tsp_problem.neighborhood_radius * 0.8)  # find decoupled ETSPN tour over clusters
             
             turning_radius = (self._turning_velocity * self._turning_velocity) / self._max_acceleration
-            path = tsp_solver.plan_tour_dtspn_decoupled(clusters[i], 0, tsp_problem.neighborhood_radius * 0.8, turning_radius)  # find decoupled DTSPN tour over clusters
-            # path = tsp_solver.plan_tour_dtspn_noon_bean(clusters[i], 0, tsp_problem.neighborhood_radius * 0.8, turning_radius) # find noon-bean DTSPN tour over clusters
+            # path = tsp_solver.plan_tour_dtspn_decoupled(clusters[i], 0, tsp_problem.neighborhood_radius * 0.8, turning_radius)  # find decoupled DTSPN tour over clusters
+            path = tsp_solver.plan_tour_dtspn_noon_bean(clusters[i], 0, tsp_problem.neighborhood_radius * 0.8, turning_radius) # find noon-bean DTSPN tour over clusters
 
             ############### TSP SOLVERS PART END ###############
             
@@ -207,11 +207,12 @@ class TspPlanner:
                         sampled_path_all += sampled_path
                 if (len(path[0]) == 3):
                     plt.quiver([p[0] for p in path], [p[1] for p in path], [1] * len(path), [1] * len(path),
-                               angles=np.degrees([p[2] for p in path]))
+                               angles=np.degrees([p[2] for p in path]), width=0.002, headwidth=3, )
                 plt.plot([p[0] for p in sampled_path_all] , [p[1] for p in sampled_path_all] , '-', color=colors[i], lw=1.2, label='trajectory %d' % (i + 1))
+                plt.plot([p[0] for p in path], [p[1] for p in path], ls='none', marker='x', ms=7, mfc='k', mec='k')
 
-        trajectory = tsp_trajectory.TSPTrajectory(self._max_velocity, self._max_acceleration)
-        # trajectory = toppra_trajectory.ToppraTrajectory(self._max_velocity, self._max_acceleration)
+        # trajectory = tsp_trajectory.TSPTrajectory(self._max_velocity, self._max_acceleration)
+        trajectory = toppra_trajectory.ToppraTrajectory(self._max_velocity, self._max_acceleration)
 
         # # | ------------------- sample trajectories ------------------ |
         trajectories_samples = []
@@ -219,11 +220,12 @@ class TspPlanner:
         for i in range(len(robot_sequences)):
 
             if len(robot_sequences[i][0]) == 2 :
-                single_trajectory_samples, trajectory_time = trajectory.sample_trajectory_euclidean(robot_sequences[i])
-                # single_trajectory_samples, trajectory_time = trajectory.generate_toppra_trajectory(robot_sequences[i])
+                # single_trajectory_samples, trajectory_time = trajectory.sample_trajectory_euclidean(robot_sequences[i])
+                single_trajectory_samples, trajectory_time = trajectory.generate_toppra_trajectory(robot_sequences[i])
             elif len(robot_sequences[i][0]) == 3:
-                single_trajectory_samples, trajectory_time = trajectory.sample_trajectory_dubins(robot_sequences[i], turning_velocity=self._turning_velocity)
-            
+                # single_trajectory_samples, trajectory_time = trajectory.sample_trajectory_dubins(robot_sequences[i], turning_velocity=self._turning_velocity)
+                single_trajectory_samples, trajectory_time = trajectory.generate_toppra_trajectory(robot_sequences[i])
+
             print("trajectory_time", i, "is", trajectory_time)
             trajectories_samples.append(single_trajectory_samples)
             
@@ -231,7 +233,7 @@ class TspPlanner:
                 max_trajectory_time = trajectory_time
             
             if self._plot:  # plot trajectory samples
-                plt.plot([p[0] for p in single_trajectory_samples], [p[1] for p in single_trajectory_samples], 'o', markerfacecolor=colors[i], markeredgecolor='k', ms=2.2, markeredgewidth=0.4 , label='samples %d' % (i + 1))
+                plt.plot([p[0] for p in single_trajectory_samples], [p[1] for p in single_trajectory_samples], 'o', markerfacecolor=colors[i], markeredgecolor='k', ms=2.0, markeredgewidth=0.3 , label='samples %d' % (i + 1))
                 
         if self._plot:  # add legend to trajectory plot
             plt.legend(loc='upper right')

@@ -36,10 +36,10 @@ class ToppraTrajectory():
         # Retime the trajectory, only this step is necessary.
         t0 = time.time()
         jnt_traj, aux_traj = instance.compute_trajectory(0, 0)
-        print("Parameterization time: {:} secs".format(time.time() - t0))
+        # print("Parameterization time: {:} secs".format(time.time() - t0))
         # Sampling frequency is required to get the time samples correctly.
         # The number of points in ts_sample is duration*frequency.
-        sample_freq = 50
+        sample_freq = 20
         ts_sample = np.linspace(0, jnt_traj.get_duration(),
                                 int(jnt_traj.get_duration() * sample_freq))
         # Sampling. This returns a matrix for all DOFs. Accessing specific one is
