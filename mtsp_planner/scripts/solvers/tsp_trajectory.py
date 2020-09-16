@@ -411,8 +411,8 @@ class TSPTrajectory():
         plt.axhline(-self.max_acceleration, 0, len(accelerations), ls='-.', color='k')
         plt.plot(accelerations_time, accelerations, '-.', color=color, label='acc')
         ax.legend(loc='upper right')
-	ax2 = ax.twinx()
-	ax2.set_ylabel('acceleration [m/s^2]')
+        ax2 = ax.twinx()
+        ax2.set_ylabel('acceleration [m/s^2]')
 
     # #} end of plot_velocity_profile()
 

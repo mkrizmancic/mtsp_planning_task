@@ -6,7 +6,7 @@ Various types of TSP
 import os, sys
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from sklearn.cluster import KMeans  # need to install sudo apt-get install python3-sklearn python2-sklearn
+from sklearn.cluster import KMeans, SpectralClustering
 import numpy as np
 import math
 import dubins
@@ -25,11 +25,31 @@ class TSPSolver():
     def __init__(self):
         pass
 
+    # #{ cluster_spectral()
+
+    def cluster_spectral(self, targets, num_clusters):
+
+        targets_xy = [[i[1], i[2]] for i in targets]
+        targets_xy_array = np.array(targets_xy)
+
+        sc = SpectralClustering(n_clusters=num_clusters)
+        target_center_ids = sc.fit_predict(targets_xy_array)
+        clusters = []
+        for i in range(num_clusters):
+            clusters.append([])
+            for target_id in range(len(target_center_ids)):
+                if target_center_ids[target_id] == i:
+                    clusters[-1].append(targets[target_id])
+
+        return clusters
+
+    # #} end of cluster_spectral()
+
     # #{ cluester_kmeans()
 
     def cluster_kmeans(self, targets, num_clusters):
         """ find k-means clustering into num_clusters clusters and return 2d array of cluster's targets and also cluster centers"""
-        
+
         targets_xy = [[i[1], i[2]] for i in targets]
         targets_xy_array = np.array(targets_xy)
         km = KMeans(n_clusters=num_clusters)

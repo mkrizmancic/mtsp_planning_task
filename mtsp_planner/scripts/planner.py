@@ -13,18 +13,22 @@ this_script_path = os.path.dirname(__file__)
 
 # MRS ROS messages
 from mtsp_msgs.msg import TspProblem
-from mrs_msgs.msg import TrajectoryReference 
+from mrs_msgs.msg import TrajectoryReference
 
 # the TSP problem class
 from mtsp_problem_loader.tsp_problem import *
 
 from solvers.tsp_solvers import *
+from solvers import toppra_trajectory
 import solvers.tsp_trajectory
 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 
 import argparse
+
+# TODO: optimize topp-ra
+# TODO: try using uav flight time instead of distances
 
 
 class TspPlanner:
@@ -74,7 +78,7 @@ class TspPlanner:
             arg_parser.add_argument('--max_velocity', type=float, default=loaded_config['max_velocity'])
             arg_parser.add_argument('--max_acceleration', type=float, default=loaded_config['max_acceleration'])
             arg_parser.add_argument('--turning_velocity', type=float, default=loaded_config['turning_velocity'])
-            arg_parser.add_argument('--plot', type=bool, default=True)
+            arg_parser.add_argument('--plot', type=bool, default=loaded_config['plot'])
             arg_parser.add_argument('--problem', type=str, default=os.path.join(this_script_path, "../../mtsp_problem_loader/problems/random_problem.tsp"))
             
             args = arg_parser.parse_args()
@@ -196,15 +200,18 @@ class TspPlanner:
                     if len(path[pid]) == 2 :
                         sampled_path_all += path
                         sampled_path_all += [path[0]]
-                        #plt.plot([path[pid - 1][0] , path[pid][0]], [path[pid - 1][1] , path[pid][1]], '-', color=colors[i], lw=0.8, label='trajectory %d' % (i + 1))
+                        # plt.plot([path[pid - 1][0] , path[pid][0]], [path[pid - 1][1] , path[pid][1]], '-', color=colors[i], lw=0.8, label='trajectory %d' % (i + 1))
                     elif len(path[pid]) == 3 :
                         dubins_path = dubins.shortest_path(path[pid - 1], path[pid], turning_radius)
                         sampled_path , _ = dubins_path.sample_many(0.1)
                         sampled_path_all += sampled_path
-                
+                if (len(path[0]) == 3):
+                    plt.quiver([p[0] for p in path], [p[1] for p in path], [1] * len(path), [1] * len(path),
+                               angles=np.degrees([p[2] for p in path]))
                 plt.plot([p[0] for p in sampled_path_all] , [p[1] for p in sampled_path_all] , '-', color=colors[i], lw=1.2, label='trajectory %d' % (i + 1))
 
         trajectory = tsp_trajectory.TSPTrajectory(self._max_velocity, self._max_acceleration)
+        # trajectory = toppra_trajectory.ToppraTrajectory(self._max_velocity, self._max_acceleration)
 
         # # | ------------------- sample trajectories ------------------ |
         trajectories_samples = []
@@ -213,6 +220,7 @@ class TspPlanner:
 
             if len(robot_sequences[i][0]) == 2 :
                 single_trajectory_samples, trajectory_time = trajectory.sample_trajectory_euclidean(robot_sequences[i])
+                # single_trajectory_samples, trajectory_time = trajectory.generate_toppra_trajectory(robot_sequences[i])
             elif len(robot_sequences[i][0]) == 3:
                 single_trajectory_samples, trajectory_time = trajectory.sample_trajectory_dubins(robot_sequences[i], turning_velocity=self._turning_velocity)
             
@@ -231,9 +239,9 @@ class TspPlanner:
         print("maximal time of trajectory is", max_trajectory_time)
 
         # # | --------------- plot velocity profiles --------------- |
-        if self._plot:  # plot velocity profile
-            for i in range(len(trajectories_samples)):
-                trajectory.plot_velocity_profile(trajectories_samples[i], color=colors[i],title = 'Velocity profile %d' % (i + 1))
+        # if self._plot:  # plot velocity profile
+        #     for i in range(len(trajectories_samples)):
+        #         trajectory.plot_velocity_profile(trajectories_samples[i], color=colors[i],title = 'Velocity profile %d' % (i + 1))
         
         # # | ----------------------- show plots ---------------------- |
         if self._plot:
