@@ -8,7 +8,7 @@
 
       <rosparam file="$(find mtsp_problem_loader)/config/simulation.yaml" command="load" />
 
-      <param name="filename" value="$(find mtsp_problem_loader)/problems/random_problem.tsp" />
+      <param name="filename" value="$(find mtsp_problem_loader)/problems/random_problem0.tsp" />
 
       <!-- Topics -->
       <remap from="~tsp_problem_out" to="~tsp_problem" />

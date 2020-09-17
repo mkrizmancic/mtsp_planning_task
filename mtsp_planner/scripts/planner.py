@@ -237,7 +237,13 @@ class TspPlanner:
                 else:
                     single_trajectory_samples, trajectory_time = trajectory.sample_trajectory_dubins(robot_sequences[i], turning_velocity=self._turning_velocity)
 
-            print("trajectory_time", i, "is", trajectory_time)
+            print("trajectory_time", i+1, "is", trajectory_time)
+
+            # Fix the heading at each point of the trajectory-
+            for j in range(len(single_trajectory_samples)):
+                sample = single_trajectory_samples[j]
+                single_trajectory_samples[j] = (sample[0], sample[1], 0)
+
             trajectories_samples.append(single_trajectory_samples)
             
             if trajectory_time > max_trajectory_time:

@@ -176,7 +176,7 @@ class TSPSolver():
             for b in range(0, n):
                 g1 = goals[a][1:3]
                 g2 = goals[b][1:3]
-                if a != b:
+                if a != b and b != start_idx:
                     # store distance
                     self.distances[a][b] = dist_euclidean(g1, g2)
 
@@ -308,11 +308,12 @@ class TSPSolver():
                 path.append(end[0:2])
             else:
                 if a == 0:
+                    start = (start[0], start[1], math.atan2(end[1] - start[1], end[0] - start[0]))
                     path.append(start)
                 path.append(end)
 
-        print("plan_tour_dtspn_decoupled path", path)
-        return path
+        print("plan_tour_dtspn_decoupled path", path[:-1])
+        return path[:-1]
 
     # #} end of plan_tour_dtspn_decoupled()
     

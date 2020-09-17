@@ -7,7 +7,7 @@ max_acceleration: 2.5 # [m/s^2]
 turning_velocity: 2.7 # [m/s]
 plot: false
 
-# problem: "../../mtsp_problem_loader/problems/random_problem7.tsp"  --> uneven cluster sizes
-# problem: "../../mtsp_problem_loader/problems/random_problem8.tsp"  --> potential collision
-problem: "../../mtsp_problem_loader/problems/random_problem9.tsp"
+problem: "../../mtsp_problem_loader/problems/random_problem7.tsp"  # --> uneven cluster sizes
+#problem: "../../mtsp_problem_loader/problems/random_problem8.tsp"  # --> potential collision
+#problem: "../../mtsp_problem_loader/problems/random_problem0.tsp"
 
