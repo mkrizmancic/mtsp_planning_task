@@ -7,6 +7,7 @@ Custom TSP planner
 import rospy
 import os
 import copy
+import itertools
 import numpy as np
 import dubins
 this_script_path = os.path.dirname(__file__)
@@ -141,23 +142,9 @@ class TspPlanner:
     def plan_trajectory(self, tsp_problem): 
         """method for planning the M(D)TSP(N) plans based on tsp_problem"""
         
-        # copy the points
-        if self._plot:
-            ax = MTSPProblem.plot_problem(tsp_problem, show=False)
-            arena_corners = read_world_file_arena(os.path.join(this_script_path, "../../mtsp_state_machine/config/world.yaml"))
-            plt.plot([arena_corners[i][0] for i in range(-1, len(arena_corners))], [arena_corners[i][1] for i in range(-1, len(arena_corners))], 'c-',label='fly area')
-            
         tsp_solver = TSPSolver()
-        
-        
-        ############### TARGET LOCATIONS CLUSTERING BEGIN ###############
-        # clusters = [[tsp_problem.start_positions[i]] for i in range(tsp_problem.number_of_robots)]  # initiate cluster with starts
-        # print("clusters with start", clusters)
-        # for i in range(tsp_problem.number_of_robots):
-        #     start_id = i * len(tsp_problem.targets) / tsp_problem.number_of_robots
-        #     stop_id = (i + 1) * len(tsp_problem.targets) / tsp_problem.number_of_robots
-        #     clusters[i] += tsp_problem.targets[start_id:stop_id]
 
+        ############### TARGET LOCATIONS CLUSTERING BEGIN ###############
         clusters, cluster_centers = tsp_solver.cluster_kmeans(tsp_problem.targets, tsp_problem.number_of_robots)
         if (dist_euclidean(tsp_problem.start_positions[0][0:2], cluster_centers[0][0:2]) <
             dist_euclidean(tsp_problem.start_positions[0][0:2], cluster_centers[1][0:2])):
@@ -167,9 +154,42 @@ class TspPlanner:
             clusters[0].insert(0, tsp_problem.start_positions[1])
             clusters[1].insert(0, tsp_problem.start_positions[0])
 
+        # clusters, cluster_centers = tsp_solver.cluster_from_start(tsp_problem.targets, tsp_problem.start_positions)
+
         ############### TARGET LOCATIONS CLUSTERING END ###############
 
-        
+        best_trajectory_samples, best_trajectory_time = self.attempt_plan_trajectory(tsp_problem, tsp_solver, clusters)
+        num_collision = check_collisions(best_trajectory_samples)
+        initial_trajectory_time = best_trajectory_time + 10 * num_collision
+
+
+        # TODO: check for collisions
+        # TODO: reassign starting points
+
+        while(abs(len(clusters[0]) - len(clusters[1])) > 1):
+            clusters = move_points_between_clusters(clusters, cluster_centers)
+            trajectory_samples, trajectory_time = self.attempt_plan_trajectory(tsp_problem, tsp_solver, clusters)
+            num_collision = check_collisions(trajectory_samples)
+            trajectory_time = trajectory_time + 10 * num_collision
+
+            if trajectory_time < best_trajectory_time:
+                best_trajectory_time = trajectory_time
+                best_trajectory_samples = copy.deepcopy(trajectory_samples)
+
+        print("Initial trajectory time", initial_trajectory_time)
+        print("Best trajectory time", best_trajectory_time)
+
+        return best_trajectory_samples
+
+
+    def attempt_plan_trajectory(self, tsp_problem, tsp_solver, clusters):
+        # copy the points
+        if self._plot:
+            ax = MTSPProblem.plot_problem(tsp_problem, show=False)
+            arena_corners = read_world_file_arena(os.path.join(this_script_path, "../../mtsp_state_machine/config/world.yaml"))
+            plt.plot([arena_corners[i][0] for i in range(-1, len(arena_corners))],
+                     [arena_corners[i][1] for i in range(-1, len(arena_corners))], 'c-', label='fly area')
+
         # # | -------------------- plot the clusters ------------------- |
         if self._plot:  # plot the clusters
             colors = cm.rainbow(np.linspace(0, 1, tsp_problem.number_of_robots))
@@ -254,6 +274,7 @@ class TspPlanner:
                 
         if self._plot:  # add legend to trajectory plot
             plt.legend(loc='upper right')
+            plt.title("Time: {:.3f} s".format(max_trajectory_time))
             
         print("maximal time of trajectory is", max_trajectory_time)
 
@@ -265,8 +286,47 @@ class TspPlanner:
         # # | ----------------------- show plots ---------------------- |
         if self._plot:
             plt.show()
-        return trajectories_samples   
+        return trajectories_samples, max_trajectory_time
             
+def move_points_between_clusters(clusters, cluster_centres):
+    smaller = 0 if len(clusters[0]) < len(clusters[1]) else 1
+    bigger = 1 if smaller == 0 else 0
+
+    min_distance = 10000
+    idx = -1
+    for point in clusters[bigger]:
+        idx += 1
+        if idx == 0:
+            continue
+        dist = dist_euclidean(cluster_centres[smaller], point[1:3])
+        if dist < min_distance:
+            min_distance = dist
+            min_index = idx
+
+    clusters[smaller].append(clusters[bigger].pop(min_index))
+
+    return clusters
+
+def check_collisions(trajectory_samples):
+    dist_warn = 1
+    deadzone = 2
+    num_collisons = 0
+    time_sample = 0.2
+
+    shorter_trajectory_idx = 0 if len(trajectory_samples[0]) < len(trajectory_samples[1]) else 1
+    shorter_trajectory_end = trajectory_samples[shorter_trajectory_idx][-1]
+    t = 0
+    last_collision = 0
+    for point1, point2 in itertools.izip_longest(trajectory_samples[0], trajectory_samples[1], fillvalue=shorter_trajectory_end):
+        if dist_euclidean(point1[0:2], point2[0:2]) < dist_warn:
+            if (t - last_collision) * time_sample > deadzone:
+                num_collisons += 1
+                last_collision = t
+                print("!!! COLLISION DETECTED Total: {}!!!".format(num_collisons))
+        t += 1
+
+    return num_collisons
+
 
 if __name__ == '__main__':
     myargv = rospy.myargv(argv=sys.argv)

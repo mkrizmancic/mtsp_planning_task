@@ -25,8 +25,6 @@ class TSPSolver():
     def __init__(self):
         pass
 
-    # #{ cluster_spectral()
-
     def cluster_spectral(self, targets, num_clusters):
 
         targets_xy = [[i[1], i[2]] for i in targets]
@@ -42,10 +40,6 @@ class TSPSolver():
                     clusters[-1].append(targets[target_id])
 
         return clusters
-
-    # #} end of cluster_spectral()
-
-    # #{ cluester_kmeans()
 
     def cluster_kmeans(self, targets, num_clusters):
         """ find k-means clustering into num_clusters clusters and return 2d array of cluster's targets and also cluster centers"""
@@ -64,9 +58,16 @@ class TSPSolver():
 
         return clusters, cluster_centers
 
-    # #} end of cluester_kmeans()
+    def cluster_from_start(self, targets, start_points):
+        clusters = [[point] for point in start_points]
+        cluster_centres = [point[1:3] for point in start_points]
+        for target in targets:
+            if dist_euclidean(target[1:3], cluster_centres[0]) < dist_euclidean(target[1:3], cluster_centres[1]):
+                clusters[0].append(target)
+            else:
+                clusters[1].append(target)
 
-    # #{ plan_tour_etsp()
+        return clusters, cluster_centres
 
     def plan_tour_etsp(self, targets, start_idx):
         """ solve euclidean tsp on targets with given goals and starts"""
