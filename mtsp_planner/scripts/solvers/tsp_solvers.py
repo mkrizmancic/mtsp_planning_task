@@ -183,15 +183,15 @@ class TSPSolver():
 
         sequence = self.compute_tsp_sequence(start_idx=start_idx)
 
-        samples_position = 12
+        samples_position = 16
         if sensing_radius == 0 :
             samples_position = 1
 
-        samples_heading = 12
+        samples_heading = 16
         if turning_radius == 0:
             samples_heading = 1
 
-        samples_radius = 2
+        samples_radius = 1
 
         samples = []
         for idx, g in enumerate(goals):

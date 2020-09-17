@@ -146,29 +146,26 @@ class TspPlanner:
 
         ############### TARGET LOCATIONS CLUSTERING BEGIN ###############
         clusters, cluster_centers = tsp_solver.cluster_kmeans(tsp_problem.targets, tsp_problem.number_of_robots)
-        if (dist_euclidean(tsp_problem.start_positions[0][0:2], cluster_centers[0][0:2]) <
-            dist_euclidean(tsp_problem.start_positions[0][0:2], cluster_centers[1][0:2])):
-            clusters[0].insert(0, tsp_problem.start_positions[0])
-            clusters[1].insert(0, tsp_problem.start_positions[1])
-        else:
-            clusters[0].insert(0, tsp_problem.start_positions[1])
-            clusters[1].insert(0, tsp_problem.start_positions[0])
+        assignment, _ = assign_clusters(tsp_problem.start_positions, cluster_centers)
+        clusters[0].insert(0, assignment[0])
+        clusters[1].insert(0, assignment[1])
 
         # clusters, cluster_centers = tsp_solver.cluster_from_start(tsp_problem.targets, tsp_problem.start_positions)
 
         ############### TARGET LOCATIONS CLUSTERING END ###############
 
-        best_trajectory_samples, best_trajectory_time = self.attempt_plan_trajectory(tsp_problem, tsp_solver, clusters)
+        best_trajectory_samples, best_trajectory_time = self.attempt_plan_trajectory(tsp_problem, tsp_solver, clusters, cluster_centers)
         num_collision = check_collisions(best_trajectory_samples)
-        initial_trajectory_time = best_trajectory_time + 10 * num_collision
+        best_trajectory_time = best_trajectory_time + 10 * num_collision
+        initial_trajectory_time = best_trajectory_time
 
 
         # TODO: check for collisions
         # TODO: reassign starting points
 
         while(abs(len(clusters[0]) - len(clusters[1])) > 1):
-            clusters = move_points_between_clusters(clusters, cluster_centers)
-            trajectory_samples, trajectory_time = self.attempt_plan_trajectory(tsp_problem, tsp_solver, clusters)
+            clusters, cluster_centers = move_points_between_clusters(clusters, cluster_centers)
+            trajectory_samples, trajectory_time = self.attempt_plan_trajectory(tsp_problem, tsp_solver, clusters, cluster_centers)
             num_collision = check_collisions(trajectory_samples)
             trajectory_time = trajectory_time + 10 * num_collision
 
@@ -182,7 +179,7 @@ class TspPlanner:
         return best_trajectory_samples
 
 
-    def attempt_plan_trajectory(self, tsp_problem, tsp_solver, clusters):
+    def attempt_plan_trajectory(self, tsp_problem, tsp_solver, clusters, cluster_centers):
         # copy the points
         if self._plot:
             ax = MTSPProblem.plot_problem(tsp_problem, show=False)
@@ -194,7 +191,7 @@ class TspPlanner:
         if self._plot:  # plot the clusters
             colors = cm.rainbow(np.linspace(0, 1, tsp_problem.number_of_robots))
             for i in range(tsp_problem.number_of_robots):
-                # plt.plot([cluster_centers[i][0]],[cluster_centers[i][1]],'*',color=colors[i])
+                plt.plot([cluster_centers[i][0]],[cluster_centers[i][1]],'*',color=colors[i])
                 plt.plot([c[1] for c in clusters[i]], [c[2] for c in clusters[i]], '.', color=colors[i])
 
         # # | ---------------------- solve the TSP --------------------- |
@@ -208,7 +205,7 @@ class TspPlanner:
 
             turning_radius = (self._turning_velocity * self._turning_velocity) / self._max_acceleration
             sampler = tsp_trajectory.TSPTrajectory(self._max_velocity, self._max_acceleration)
-            path = tsp_solver.plan_tour_dtspn_decoupled(clusters[i], 0, tsp_problem.neighborhood_radius * 0.65, turning_radius)  # find decoupled DTSPN tour over clusters
+            path = tsp_solver.plan_tour_dtspn_decoupled(clusters[i], 0, tsp_problem.neighborhood_radius * 0.6, turning_radius)  # find decoupled DTSPN tour over clusters
             # path = tsp_solver.plan_tour_dtspn_noon_bean(clusters[i], 0, tsp_problem.neighborhood_radius * 0.65, turning_radius,
             #                                             turning_velocity=self._turning_velocity, sampler=sampler) # find noon-bean DTSPN tour over clusters
 
@@ -274,7 +271,7 @@ class TspPlanner:
                 
         if self._plot:  # add legend to trajectory plot
             plt.legend(loc='upper right')
-            plt.title("Time: {:.3f} s".format(max_trajectory_time))
+            plt.title("{} - Time: {:.3f} s".format(tsp_problem.name, max_trajectory_time))
             
         print("maximal time of trajectory is", max_trajectory_time)
 
@@ -287,6 +284,40 @@ class TspPlanner:
         if self._plot:
             plt.show()
         return trajectories_samples, max_trajectory_time
+
+def assign_clusters(start_points, center_points=None, clusters=None):
+    if center_points is None:
+        center_points = []
+        for cluster in clusters:
+            center_points.append([0, 0])
+            num_points = 0
+            for point in cluster:
+                center_points[-1][0] += point[1]
+                center_points[-1][1] += point[2]
+                num_points += 1
+            center_points[-1][0] /= num_points
+            center_points[-1][1] /= num_points
+
+    min_distance = 10000
+    assignments = [[], []]
+    for s in range(len(start_points)):
+        for c in range(len(center_points)):
+            dist = dist_euclidean(start_points[s][1:3], center_points[c])
+            if dist < min_distance:
+                min_distance = dist
+                assignments[c] = start_points[s]
+                assignments[(c+1)%2] = start_points[(s+1)%2]
+
+    # if dist_euclidean(start_points[0][1:3], center_points[0]) + dist_euclidean(start_points[1][1:3], center_points[1]) <  \
+    #         dist_euclidean(start_points[0][1:3], center_points[1]) + dist_euclidean(start_points[1][1:3], center_points[0]):
+    #     assignments = [start_points[0], start_points[1]]
+    # else:
+    #     assignments = [start_points[1], start_points[0]]
+
+
+    return assignments, center_points
+
+
             
 def move_points_between_clusters(clusters, cluster_centres):
     smaller = 0 if len(clusters[0]) < len(clusters[1]) else 1
@@ -305,10 +336,14 @@ def move_points_between_clusters(clusters, cluster_centres):
 
     clusters[smaller].append(clusters[bigger].pop(min_index))
 
-    return clusters
+    assignment, cluster_centres = assign_clusters([cluster[0] for cluster in clusters], clusters=[cluster[1:] for cluster in clusters])
+    clusters[0][0] = assignment[0]
+    clusters[1][0] = assignment[1]
+
+    return clusters, cluster_centres
 
 def check_collisions(trajectory_samples):
-    dist_warn = 1
+    dist_warn = 3
     deadzone = 2
     num_collisons = 0
     time_sample = 0.2
@@ -316,7 +351,7 @@ def check_collisions(trajectory_samples):
     shorter_trajectory_idx = 0 if len(trajectory_samples[0]) < len(trajectory_samples[1]) else 1
     shorter_trajectory_end = trajectory_samples[shorter_trajectory_idx][-1]
     t = 0
-    last_collision = 0
+    last_collision = -2
     for point1, point2 in itertools.izip_longest(trajectory_samples[0], trajectory_samples[1], fillvalue=shorter_trajectory_end):
         if dist_euclidean(point1[0:2], point2[0:2]) < dist_warn:
             if (t - last_collision) * time_sample > deadzone:

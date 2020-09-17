@@ -72,7 +72,7 @@ class MTSPProblem():
         """ load .tsp file to MTSPProblem proble """
         loaded_problem = {}
         loading_coords = False
-        name = None
+        name = filename.split('/')[-1][:-4]
         type = None
         comment = None
         dimension = None
@@ -83,8 +83,8 @@ class MTSPProblem():
         start_indexes = None
         with open(filename, 'r') as f:
             for line in f:
-                if MTSPProblem.NAME_PARAM in line:
-                    name = MTSPProblem.get_param_from_line(MTSPProblem.NAME_PARAM, line)
+                # if MTSPProblem.NAME_PARAM in line:
+                #     name = MTSPProblem.get_param_from_line(MTSPProblem.NAME_PARAM, line)
                 if MTSPProblem.TYPE_PARAM in line:
                     type = MTSPProblem.get_param_from_line(MTSPProblem.TYPE_PARAM, line)
                 if MTSPProblem.COMMENT_PARAM in line:
