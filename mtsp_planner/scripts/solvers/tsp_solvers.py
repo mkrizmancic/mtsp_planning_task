@@ -182,31 +182,34 @@ class TSPSolver():
 
         sequence = self.compute_tsp_sequence(start_idx=start_idx)
 
-        samples_position = 8
+        samples_position = 12
         if sensing_radius == 0 :
             samples_position = 1
 
-        samples_heading = 8
+        samples_heading = 12
         if turning_radius == 0:
             samples_heading = 1
+
+        samples_radius = 2
 
         samples = []
         for idx, g in enumerate(goals):
             samples.append([])
             if idx == start_idx:
                 local_samples_position = 1
-                local_sensing_radius = 0
+                local_sensing_radius = 0.0
             else:
                 local_samples_position = samples_position
-                local_sensing_radius = sensing_radius
+                local_sensing_radius = float(sensing_radius)
                 
             for sp in range(local_samples_position):
                 for sh in range(samples_heading):
-                    alpha = sp * 2 * math.pi / samples_heading
-                    position = g[1:3] + local_sensing_radius * np.array([math.cos(alpha), math.sin(alpha)])
-                    heading = sh * 2 * math.pi / samples_heading
-                    sample = (position[0], position[1], heading)
-                    samples[idx].append(sample)
+                    for sr in range(samples_radius):
+                        alpha = sp * 2 * math.pi / samples_heading
+                        position = g[1:3] + local_sensing_radius / samples_radius * (sr+1) * np.array([math.cos(alpha), math.sin(alpha)])
+                        heading = sh * 2 * math.pi / samples_heading
+                        sample = (position[0], position[1], heading)
+                        samples[idx].append(sample)
 
         # TODO - this code select the first sample in the set!
         selected_samples = [0] * n
@@ -315,16 +318,18 @@ class TSPSolver():
     
     # #{ plan_tour_dtspn_noon_bean()
     
-    def plan_tour_dtspn_noon_bean(self, goals, start_idx, sensing_radius, turning_radius):
+    def plan_tour_dtspn_noon_bean(self, goals, start_idx, sensing_radius, turning_radius, turning_velocity=None, sampler=None):
         n = len(goals)     
        
-        samples_position = 4
+        samples_position = 6
         if sensing_radius == 0 :
             samples_position = 1
 
-        samples_heading = 4
+        samples_heading = 6
         if turning_radius == 0:
             samples_heading = 1
+
+        samples_radius = 1
 
         k = samples_position * samples_heading
         
@@ -335,32 +340,34 @@ class TSPSolver():
             # samples.append([])
             if idx == start_idx:
                 local_samples_position = 1
-                local_sensing_radius = 0
+                local_sensing_radius = 0.0
             else:
                 local_samples_position = samples_position
-                local_sensing_radius = sensing_radius
+                local_sensing_radius = float(sensing_radius)
             
             for sp in range(local_samples_position):
                 for sh in range(samples_heading):
-                    alpha = sp * 2 * math.pi / samples_heading
-                    position = g[1:3] + local_sensing_radius * np.array([math.cos(alpha), math.sin(alpha)])
-                    heading = sh * 2 * math.pi / samples_heading
-                    sample = (position[0], position[1], heading)
-                    
-                    # save mapping from samples to targets and reversed
-                    sample_target[len(samples)] = idx
-                    if taget_samples.get(idx) is None:
-                        taget_samples[idx] = []
-                    taget_samples[idx].append(len(samples))
-                    
-                    # add sample
-                    samples.append(sample)
-                    print(sample)
+                    for sr in range(samples_radius):
+                        alpha = sp * 2 * math.pi / samples_heading
+                        position = g[1:3] + local_sensing_radius / samples_radius * (sr+1) * np.array([math.cos(alpha), math.sin(alpha)])
+                        heading = sh * 2 * math.pi / samples_heading
+                        sample = (position[0], position[1], heading)
+
+                        # save mapping from samples to targets and reversed
+                        sample_target[len(samples)] = idx
+                        if taget_samples.get(idx) is None:
+                            taget_samples[idx] = []
+                        taget_samples[idx].append(len(samples))
+
+                        # add sample
+                        samples.append(sample)
+                        print(sample)
 
         num_samples = len(samples)
         # matrix of all distances between samples of size[len(samples),len(samples)]
         all_distances = np.zeros([num_samples, num_samples])
-        
+
+        # TODO: Here the absolute distance between any two points is used. We would like to use flight time instead.
         max_dist = 0
         for i in range(num_samples):
             for j in range(num_samples):
@@ -373,6 +380,8 @@ class TSPSolver():
                 else:
                     dubins_path = dubins.shortest_path(s1, s2, turning_radius)
                     dist = dubins_path.path_length()
+                    if (sampler is not None):
+                        _, dist = sampler.sample_trajectory_dubins([s1, s2], turning_velocity=turning_velocity, init_velocity=turning_velocity)
                 if dist > max_dist:
                     max_dist = dist
                 # store results

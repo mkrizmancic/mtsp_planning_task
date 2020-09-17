@@ -229,21 +229,21 @@ class TSPTrajectory():
 
     # #{ sampleTrajectoryDubins()
 
-    def sample_trajectory_dubins(self, sequence, turning_velocity=None):
+    def sample_trajectory_dubins(self, sequence, turning_velocity=None, init_velocity=0):
         """ sample dubins tarjectory over sequence """
         
-        print("sample_trajectory_dubins in sequence", sequence)
+        # print("sample_trajectory_dubins in sequence", sequence)
         
         if turning_velocity is None:
             turning_velocity = self.max_velocity
-        print("using turning_velocity", turning_velocity ," and acceleration ",self.max_acceleration)
+        # print("using turning_velocity", turning_velocity ," and acceleration ",self.max_acceleration)
        
             
         turning_radius = (turning_velocity * turning_velocity) / self.max_acceleration
-        print("which means turning_radius", turning_radius)
+        # print("which means turning_radius", turning_radius)
          
         sequence_start = 0
-        init_velocity = 0
+        init_velocity = init_velocity
         time_to_turning_velocity = (turning_velocity - init_velocity) / self.max_acceleration
         dist_to_turning_velocity = 0.5 * (turning_velocity + init_velocity) * time_to_turning_velocity  # average speed * time
         
@@ -323,8 +323,12 @@ class TSPTrajectory():
             # second segment of Dubins
             if dubins_path.path_type() != dubins.LRL and dubins_path.path_type() != dubins.RLR: # straight line segment
                 start_straight_line = dubins_path.sample(dubins_path.segment_length(0))
-                stop_straight_line = dubins_path.sample(dubins_path.segment_length(0) + dubins_path.segment_length(1))
-                
+                # print(dubins_path.segment_length(0), dubins_path.segment_length(1), dubins_path.segment_length(2), dubins_path.path_length())
+                if (abs(dubins_path.segment_length(0) + dubins_path.segment_length(1) - dubins_path.path_length()) < 0.001):
+                    stop_straight_line = dubins_path.sample(dubins_path.path_length())
+                else:
+                    stop_straight_line = dubins_path.sample(dubins_path.segment_length(0) + dubins_path.segment_length(1))
+
                 """
                 print("start_straight_line", start_straight_line)
                 print("stop_straight_line", stop_straight_line)
