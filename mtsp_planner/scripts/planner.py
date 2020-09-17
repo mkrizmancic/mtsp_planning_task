@@ -81,7 +81,7 @@ class TspPlanner:
             arg_parser.add_argument('--max_acceleration', type=float, default=loaded_config['max_acceleration'])
             arg_parser.add_argument('--turning_velocity', type=float, default=loaded_config['turning_velocity'])
             arg_parser.add_argument('--plot', type=bool, default=loaded_config['plot'])
-            arg_parser.add_argument('--problem', type=str, default=os.path.join(this_script_path, "../../mtsp_problem_loader/problems/random_problem.tsp"))
+            arg_parser.add_argument('--problem', type=str, default=os.path.join(this_script_path, loaded_config['problem']))
             
             args = arg_parser.parse_args()
             print("running with args", args)

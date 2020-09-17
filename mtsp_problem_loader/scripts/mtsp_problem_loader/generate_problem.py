@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
+import yaml
+import os
 
 
 NUM_TARGETS = 20
@@ -24,17 +26,21 @@ num_robots = 2
 neighborhood_radius = 2 
 
 arena_file = "../../../mtsp_state_machine/config/world.yaml"
-uav_start_pos_files = ["../../../mtsp_state_machine/tmux/test/pos1.txt", "../../../mtsp_state_machine/tmux/test/pos2.txt"]
+uav_start_pos_files = ["../../../mtsp_state_machine/tmux/test/pos1.yaml", "../../../mtsp_state_machine/tmux/test/pos2.yaml"]
 #fill targets array with random distinct targets within x_limits adn y_limits bounds
 
-
+i = 0
+filename_i = filename.split('.tsp')[0] + str(i) + '.tsp'
+while (os.path.exists(filename_i)):
+    i += 1
+    filename_i = filename.split('.tsp')[0] + str(i) + '.tsp'
 
 
 uav_start_positions = []
 for i in range(num_robots):
-    pos = load_gazebo_uav_init_file(uav_start_pos_files[i])
-    uav_start_positions.append(pos)
-    print(pos)
+    with open(uav_start_pos_files[i], 'r') as stream:
+        uav = yaml.safe_load(stream)
+        uav_start_positions.append([uav['uav_name']['x'], uav['uav_name']['y']])
 
 arena_corners = read_world_file_arena(arena_file)
 print("arena_corners",arena_corners)
@@ -64,7 +70,7 @@ while len(targets) < NUM_TARGETS:
     
     
 #save random problem to filename file
-MTSPProblem.save_problem(filename, name, type, comment, edge_weight_type, targets, num_robots,start_indexes, neighborhood_radius)
+MTSPProblem.save_problem(filename_i, name, type, comment, edge_weight_type, targets, num_robots,start_indexes, neighborhood_radius)
 
 #plot the randomly generated problem
 figsize = (12,8)
