@@ -20,18 +20,12 @@ from mrs_msgs.msg import TrajectoryReference
 from mtsp_problem_loader.tsp_problem import *
 
 from solvers.tsp_solvers import *
-from solvers import toppra_trajectory
 import solvers.tsp_trajectory
 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
 
 import argparse
-
-# TODO: optimize topp-ra
-# TODO: test on different scenarios
-
-use_toppra = False
 
 class TspPlanner:
 
@@ -232,11 +226,7 @@ class TspPlanner:
                 plt.plot([p[0] for p in sampled_path_all] , [p[1] for p in sampled_path_all] , '-', color=colors[i], lw=1.2, label='trajectory %d' % (i + 1))
                 plt.plot([p[0] for p in path], [p[1] for p in path], ls='none', marker='x', ms=7, mfc='k', mec='k')
 
-        # Initialize trajectory sampler.
-        if use_toppra:
-            trajectory = toppra_trajectory.ToppraTrajectory(self._max_velocity, self._max_acceleration)
-        else:
-            trajectory = tsp_trajectory.TSPTrajectory(self._max_velocity, self._max_acceleration)
+        trajectory = tsp_trajectory.TSPTrajectory(self._max_velocity, self._max_acceleration)
 
         # # | ------------------- sample trajectories ------------------ |
         trajectories_samples = []
@@ -244,15 +234,9 @@ class TspPlanner:
         for i in range(len(robot_sequences)):
 
             if len(robot_sequences[i][0]) == 2 :
-                if use_toppra:
-                    single_trajectory_samples, trajectory_time = trajectory.generate_toppra_trajectory(robot_sequences[i])
-                else:
-                    single_trajectory_samples, trajectory_time = trajectory.sample_trajectory_euclidean(robot_sequences[i])
+                single_trajectory_samples, trajectory_time = trajectory.sample_trajectory_euclidean(robot_sequences[i])
             elif len(robot_sequences[i][0]) == 3:
-                if use_toppra:
-                    single_trajectory_samples, trajectory_time = trajectory.generate_toppra_trajectory(robot_sequences[i])
-                else:
-                    single_trajectory_samples, trajectory_time = trajectory.sample_trajectory_dubins(robot_sequences[i], turning_velocity=self._turning_velocity)
+                single_trajectory_samples, trajectory_time = trajectory.sample_trajectory_dubins(robot_sequences[i], turning_velocity=self._turning_velocity)
 
             print("trajectory_time", i+1, "is", trajectory_time)
 

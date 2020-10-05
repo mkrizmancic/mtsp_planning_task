@@ -10,7 +10,7 @@ import yaml
 import os
 
 
-NUM_TARGETS = 20
+NUM_TARGETS = 60
 NUM_VEHICLES = 2
 NUM_AFTER_DECIMAL_POINTS = 1
 

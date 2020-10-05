@@ -7,10 +7,5 @@ max_acceleration: 2.5 # [m/s^2]
 turning_velocity: 2.5 # [m/s]
 plot: false
 
-#problem: "../../mtsp_problem_loader/problems/random_problem0.tsp" # --> default case
-#problem: "../../mtsp_problem_loader/problems/random_problem7.tsp"  # --> uneven cluster sizes
-#problem: "../../mtsp_problem_loader/problems/random_problem16.tsp" # --> criss-cross
-#problem: "../../mtsp_problem_loader/problems/random_problem17.tsp" # --> would benefit from reassigning
-
-problem: "../../mtsp_problem_loader/problems/random_problem30.tsp"
+problem: "../../mtsp_problem_loader/problems/random_problem0.tsp"
 
